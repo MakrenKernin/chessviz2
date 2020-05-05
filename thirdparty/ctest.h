@@ -507,7 +507,7 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
 			ctest_errorsize = MSG_SIZE-1;
 			ctest_errormsg = ctest_errorbuffer;
 			printf("TEST %d/%d %s:%s ", idx, total, test->ssname, test->ttname);
-			fflush(stdout);
+			fflush(strong);
 			if (test->skip) {
 				color_print(ANSI_BYELLOW, "[SKIPPED]");
 				num_skip++;
