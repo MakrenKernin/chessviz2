@@ -9,8 +9,8 @@ void initialize_board(char board[][8])
 {
 	board[7][1] = 'n';
 	board[7][2] = 'b';
-	board[7][3] = 'k';
-	board[7][4] = 'q';
+	board[7][3] = 'q';
+	board[7][4] = 'k';
 	board[7][5] = 'b';
 	board[7][6] = 'n';
 	board[7][7] = 'r';
@@ -52,6 +52,7 @@ static void parse_turn(
 		char* figure,
 		size_t* start,
 		int* turn_figure,
+		char* status,
 		size_t len)
 {
 	int count = 0;
@@ -85,13 +86,24 @@ static void parse_turn(
 			turn_figure[count] = data[i] - '1';
 			count++;
 		}
+		if (data[i + 1] == '+') {
+			*status = '+';
+		}
+		if (data[i + 1] == '#') {
+			*status = '#';
+		}
 	}
 }
 
 void parse_round(Parsing* turn, char* data)
 {
 	turn->round = 0;
-	size_t start = 3;
+	turn->type_turn_white = ' ';
+	turn->type_turn_black = ' ';
+	size_t start = 1;
+	while (data[start - 1] != ' ') {
+		start++;
+	}
 	size_t len = strlen(data);
 	turn->round++;
 	parse_turn(
@@ -101,6 +113,7 @@ void parse_round(Parsing* turn, char* data)
 			&turn->white_figure,
 			&start,
 			turn->white_turn,
+			&turn->type_turn_white,
 			len);
 	start++;
 	turn->round++;
@@ -111,6 +124,7 @@ void parse_round(Parsing* turn, char* data)
 			&turn->black_figure,
 			&start,
 			turn->black_turn,
+			&turn->type_turn_black,
 			len);
 }
 
@@ -181,24 +195,27 @@ int turn_validation(
 			return -3;
 		}
 	}
+	if (type_turn != '-' && type_turn != 'x') {
+		return -18;
+	}
 	return 0;
 }
 
 int pawn_move(int round, int* pawn_turn, char type_turn, char board[][8])
 {
 	int k = 1;
-	if (type_turn == '-') {
-		int max_turn = 1;
-		if (round % 2 == 1) {
-			if (pawn_turn[1] == 1) {
-				max_turn++;
-			}
-		} else {
-			k = -1;
-			if (pawn_turn[1] == 6) {
-				max_turn++;
-			}
+	int max_turn = 1;
+	if (round % 2 == 1) {
+		if (pawn_turn[1] == 1) {
+			max_turn++;
 		}
+	} else {
+		k = -1;
+		if (pawn_turn[1] == 6) {
+			max_turn++;
+		}
+	}
+	if (type_turn == '-') {
 		if (pawn_turn[0] != pawn_turn[2]) {
 			return -4;
 		}
@@ -206,7 +223,8 @@ int pawn_move(int round, int* pawn_turn, char type_turn, char board[][8])
 				|| (pawn_turn[3] - pawn_turn[1]) * k <= 0) {
 			return -5;
 		}
-		for (int i = pawn_turn[1] + k; i != pawn_turn[3]; i += k) {
+		for (int i = pawn_turn[1] + k; i != pawn_turn[3]; i +=
+				k) {
 			if (board[i][pawn_turn[2]] != ' ') {
 				return -7;
 			}
@@ -220,6 +238,8 @@ int pawn_move(int round, int* pawn_turn, char type_turn, char board[][8])
 
 void input_data(Parsing* turn)
 {
+	turn->type_turn_white = ' ';
+	turn->type_turn_black = ' ';
 	char i = getchar();
 	size_t len = 1;
 	turn->data[0] = i;
@@ -237,17 +257,18 @@ void input_data(Parsing* turn)
 			&turn->white_figure,
 			&count,
 			turn->white_turn,
+			&turn->type_turn_white,
 			len);
 	count++;
 	turn->round++;
 	parse_turn(
-
 			turn->round,
 			turn->data,
 			&turn->type_turn_black,
 			&turn->black_figure,
 			&count,
 			turn->black_turn,
+			&turn->type_turn_black,
 			len);
 }
 
@@ -382,57 +403,62 @@ const void parse_error_code(int error_code)
 			printf("Выход за границу доски\n");
 			break;
 		case -2:
-			printf("Выбор не той фигуры\n");
+			printf("Выбор неправильной фигуры для хода\n");
 			break;
 		case -3:
-			printf("Неверные координаты\n");
+			printf("Ошибка выбора координаты хода \n");
 			break;
 		case -4:
-			printf("Неправильно\n");
+			printf("Тихий ход пешки не по прямой!\n");
 			break;
+
 		case -5:
-			printf("Неверные координаты для пешки\n");
+			printf("Некорректные координаты хода пешки\n");
 			break;
 		case -6:
-			printf("Пешка прямо не рубит\n");
+			printf("Ход пешки по прямой при рубке!\n");
 			break;
 		case -7:
-			printf("Препятствие\n");
+			printf("На пути пешки есть фигура!\n");
 			break;
 		case -8:
-			printf("Назад не ходит\n");
+			printf("Ход пешки в обратную сторону!\n");
 			break;
 		case -9:
-			printf("Неверный ход коня\b");
+			printf("Некорректный ход коня!\b");
 			break;
 		case -10:
-			printf("Ладье по диагонали нельзя\n");
+			printf("Ходьба ладьи по диагонали!\n");
 			break;
 		case -11:
-			printf("Препятсвие\n");
+			printf("Фигура на пути! \n");
 			break;
 		case -12:
-			printf("Слон прямо не ходит\n");
+			printf("Ходьба слона по прямой!\n");
 			break;
 		case -13:
-			printf("Нельзя\n");
+			printf("Ходьба не по диагонали!\n");
 			break;
 		case -14:
-			printf("Неверный ход короля\n");
+			printf("Некорректный ход короля!\n");
 			break;
 		case -15:
-			printf("Неверная фигура\n");
+			printf("Нет такой фигуры!\n");
 			break;
 		case -16:
-			printf("Окончание\n");
+			printf("Конец файла\n");
 			break;
 		case -17:
-			printf("Неверный ход королевы\n");
+			printf("Некорректный ход королевы\n");
+			break;
+		case -18:
+			printf("Некорректный тип хода!\n");
 			break;
 	}
 }
 
 int turn_figure(
+		char status,
 		int* round,
 		int* figure_turn,
 		char figure,
@@ -442,7 +468,7 @@ int turn_figure(
 	int uncorrect;
 	*round += 1;
 	uncorrect = turn_validation(*round, figure_turn, figure, type_turn, board);
-	if (uncorrect) {
+	if (uncorrect && status != '#') {
 		parse_error_code(uncorrect);
 		return -1;
 	}
@@ -474,9 +500,11 @@ int turn_figure(
 		default:
 			uncorrect = -15;
 	}
-	if (uncorrect) {
+	if (uncorrect && status != '#') {
 		parse_error_code(uncorrect);
 		return -1;
 	}
 	return 0;
 }
+
+
