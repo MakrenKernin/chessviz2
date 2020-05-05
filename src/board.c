@@ -506,5 +506,3 @@ int turn_figure(
 	}
 	return 0;
 }
-
-
